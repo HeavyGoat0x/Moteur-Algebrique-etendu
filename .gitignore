@@ -1,0 +1,32 @@
+# Fichiers et dossiers générés par Maven
+target/
+pom.xml.versionsBackup
+dependency-reduced-pom.xml
+build/
+.mvn/
+
+# Fichiers de configuration IDE
+.idea/
+.vscode/
+*.ipr
+*.iws
+*.iml
+.classpath
+.project
+.settings/
+bin/
+
+# Fichiers de logs et temporaires
+*.kill
+*.log
+*.tmp
+temp/
+tmp/
+
+# Fichiers de cache
+*.swp
+*~
+.DS_Store
+
+# Fichiers de configuration locaux
+.env

@@ -1,0 +1,282 @@
+= Un Mini Moteur Algébrique etendu
+
+Votre NC: ..... et Nom: ...
+
+Projet individuel.
+
+L’an dernier, nous avons lancé un projet qui a rencontré un grand succès : un mini moteur algébrique. Nous avons décidé de l’étendre cette année en vous le proposant dans une situation de génie logiciel plus proche de ce que vous rencontrerez dans le monde du travail, à savoir améliorer ou étendre un projet existant. Pour cela, nous vous fournissons l’un des projets de l’an dernier sur le site Persée. Le dépôt s’appelle « prj_org » que vous avez dû cloner pour pouvoir travailler sur votre version. L'énnonce de l'an dernier est fournis ci-dessous.
+
+Dans une entreprise, vous devez créer une branche pour y apporter votre contribution, puis, en tant que chef de projet, vous devrez l'intégrer dans la branche principale à la fin.
+
+Pour le projet, on vous demande:
+ 
+1. de vous approprier le code existant et, suivant votre expertise, d’y apporter les améliorations possibles (par exemple, s’il n’a pas utilisé les interfaces ou l’héritage, afin de construire une architecture logicielle plus solide et ainsi améliorer le projet). Si nécessaire, vous améliorez le code en conséquence.
+
+2. de rajouter des tests unitaires sur le code existant et des tests permettant de vérifier que les opérateurs fournissent le bon résultat.
+
+3. d’ajouter un opérateur d’agrégation de votre choix, ainsi que les opérateurs ensemblistes : union, intersection et différence. Parmi les tests unitaires, certains devront permettre de démontrer, à l’aide des données et des plans d’exécution contenus dans le dépôt Git, le bon fonctionnement du projet.
+
+Les spécifications sont identiques à l'énoncé de l'année dernière.
+
+Vous devrez rédiger un document RENDU.md (léger mais précis) nous décrivant le travail effectué (exemple : j'ai ré‑architecturé …) et les preuves/résultats obtenus (exemple : je place les deux lots de données dans le document et je copie le résultat issu du jUnit dans celui‑ci). Attention : ce document sera lu lors de votre soutenance dans le temps imparti. Vous devez vous débrouiller pour que l’on puisse comprendre votre contribution en lisant le document en moins de 2 minutes !
+
+
+**Notez** que des avenants et/ou clarifications à ce projet seront publiés sur Persee dans les annonces. Toutes questions posées par mail ne seront pas répondues directement, mais la réponse se trouvera sur Persee.
+
+
+= Ennoncé de l'an dernier
+
+L'objet de ce mini-projet est de développer un Mini Moteur Algébrique (MMA) capable d'exécuter trois opérateurs de l'algèbre relationnelle xref:http://sql.bdpedia.fr/alg.html[algèbre relationnelle] en ligne de commande. Ce MMA peut exécuter uniquement les opérateurs de _projection_, de _sélection_ et de _jointure_. Ce mini-projet doit vous mettre l'accent sur les trois parties du cours : collections, programmation fonctionnelle et les entrées/sorties. Ces aspects du cours devront se concrétiser dans votre code. Ainsi, l'évaluation d'une requête algébrique ne devra pas se faire selon une approche « impérative ».
+
+La notation de ce mini-projet sera effectuée automatiquement. Vous devrez donc **respecter** scrupuleusement les consignes décrites ci-dessous.
+
+[IMPORTANT]
+====
+Vous respecterez les contraintes suivantes:
+
+* Vous utiliserez `git` en effectuant des commits réguliers comportant des messages informatifs. L'usage des "pull requests" est également fortement conseillé, montrant ainsi votre collaboration au sein du groupe. 
+* Le _build_ sera assuré par Maven et plus précisément Maven wrapper (déjà intégré dans le projet).
+Aucune manipulation en dehors de Maven ne devra être nécessaire.
+* La version de Java à utiliser est la https://adoptium.net/[version 17].
+* Le _build_ devra intégrer `checkstyle` pour la vérification des règles de codages Google.
+Le projet devra donc les respecter.
+`checkstyle` devra être exécuté automatiquement durant la phase `validate` du cycle de vie par défaut.
+* Des tests unitaires https://junit.org/junit5/docs/current/user-guide/[JUnit 5] (version https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter/5.9.1[_5.9.1_]) devront être disponibles pour la plupart des méthodes développées.
+* Un outil de https://fr.wikipedia.org/wiki/Couverture_de_code[_Code Coverage_] devra être intégré au _build_
+* Les fonctionnalités du langage Java devront être utilisées au mieux (POO, exceptions, librairie de collections, I/O, …).
+* L'application devra pouvoir être exécutée à partir d'un `jar` **incluant toutes les dépendances**.
+====
+
+
+== Description du Mini Moteur Algébrique
+
+=== Les opérateurs du MMA
+
+Le MMA évaluera trois types d’opérateurs :
+
+* **PROJECT** : prend une table et une liste d’attributs *LA*. Il produit en sortie une table contenant uniquement la liste d’attributs *LA*.
+
+* **SELECT** : permet une sélection. Il prend une table et un prédicat simple constitué d’un attribut comparé à une valeur constante.
+  Il n’y a pas d’opérateurs de conjonction, de disjonction ni de négation.
+  Trois comparateurs sont disponibles : `=`, `<` et `>` pour les nombres, et `=` pour les chaînes.
+  La valeur constante peut être un entier ou une chaîne. Toute chaîne est entourée de guillemets simples (`'`).
+
+* **JOIN** : prend deux tables et deux attributs à joindre. Seule l’équi-jointure est implémentée.
+  Il produit une table résultant de la jointure des deux tables.
+
+Si besoin, vous pouvez vous référer à http://sql.bdpedia.fr/alg.html[algèbre relationnelle].
+
+
+=== Contraintes sur les Répertoires de Requêtes
+
+Votre application, livrée sous la forme d’un fichier JAR avec ses dépendances, sera exécutée par un automate depuis un répertoire contenant les tables requises par la requête, ainsi que la requête.
+
+[source,bash]
+----
+$ tree test4
+test4
+├── orders.csv
+├── reqSelUsers.json
+├── results
+│   └── output.csv
+└── users.csv
+----
+
+Dans l'exemple ci-dessus:
+ * Le fichier `reqSelUsers.json` contient une requête dont le format sera décrit plus loin. 
+ * Le répertoire `results` contiendra un fichier https://fr.wikipedia.org/wiki/Comma-separated_values[CSV] nommé `output.csv` (respectez bien la typographie, sinon votre note sera impactée, car l'automate d'évaluation de votre projet ne pourra pas retrouver les données requises). 
+ * Les fichiers `orders.csv` et `users.csv` sont des fichiers de données utilisés par les requêtes. 
+
+Exemple de contenu d'un fichier csv:
+[source,bash]
+----
+$ cat users.csv 
+id,name,age
+1,Alice,22
+2,Bob,30
+3,Charlie,27
+4,David,19
+----
+
+Nous supposerons que les fichiers CSV sont toujours de petite taille et peuvent tenir en mémoire.
+
+=== Une Requête Algébrique
+
+Toute requête est décrite dans un fichier https://en.wikipedia.org/wiki/JSON[JSON
+].
+Un répertoire, comme celui présenté ci-dessus, peut contenir une ou plusieurs requêtes.
+Une requête est exécutée dans le répertoire regroupant l’ensemble des éléments nécessaires à son exécution.
+La requête est exécutée à l’aide de la commande `java`, en passant en argument le fichier JSON contenant la requête.
+
+Par exemple :
+
+[source,bash]
+----
+monPC@td4_alg/test3
+$ java -jar ../target/td4_alg-1.0-SNAPSHOT-jar-with-dependencies.jar reqProjSel.json 
+Résultat écrit dans results/output.csv
+----
+
+Dans l'exemple ci-dessus, la machine Java s'exécute depuis le répertoire `test3`, utilise un fichier JAR et ses dépendances pour traiter la requête `reqProjSel.json`.
+
+[source,bash,title="reqProjSel.json"]
+----
+{
+  "tables": {
+    "users": "users.csv",
+    "orders": "orders.csv"
+  },
+  "plan": {
+  "type": "PROJECT",
+  "columns": ["name"],
+  "input": {
+    "type": "SELECT",
+    "predicate": "age < 25",
+    "input": {
+      "type": "SCAN",
+      "table": "users"
+    }
+  }
+}
+----
+
+Une requête est définie par un fichier `JSON` comportant, dans une première partie, la désignation des fichiers CSV contenant les données, et dans une seconde partie, la requête algébrique.  
+L'exemple ci-dessus illustre une requête qui effectue une sélection, suivie d'une projection sur le nom de la collection `users`.
+
+[source,bash,title="optJoin.json"]
+----
+{
+  "tables": {
+    "users": "users.csv",
+    "orders": "orders.csv"
+  },
+  "plan": {
+    "type": "PROJECT",
+    "columns": ["name", "amount"],
+    "input": {
+      "type": "JOIN",
+      "left": {
+        "type": "PROJECT",
+        "columns": ["id", "name"],
+        "input": {
+          "type": "SCAN",
+          "table": "users"
+        }
+      },
+      "right": {
+        "type": "SCAN",
+        "table": "orders"
+      },
+      "onLeft": "id",
+      "onRight": "user_id"
+    }
+  }
+}
+----
+
+L’exemple de la requête `optJoin.json` ci-dessus effectue une projection depuis la table `users``. Le résultat est ensuite joint avec la table `orders``, produisant le résultat final.
+
+== Une Interface pour Exprimer des Requêtes
+
+Cette seconde partie vise à traduire les requêtes algébriques, écrites en impératif, en un fichier de requête algébrique au format JSON.
+
+Si l'utilisateur qui utilise son editeur de texte, exprimer une requête comme par exemple:
+[source,bash,title="reqProjSel.alg"]
+----
+users: users.csv
+orders: orders.csv
+
+R1 = SELECT users age < 25
+R = PROJ R1 name
+----
+
+Lors du lancement de la commande:
+[source,bash]
+----
+ty:~/mkTDs/td4_alg/test3
+$ java -jar ../target/td4_alg-1.0-SNAPSHOT-jar-with-dependencies.jar reqProjSel.alg 
+Traduction en reqProjSel.json
+----
+
+
+* Votre application doit détecter l’extension `.alg` et effectuer la traduction. Elle n’exécute pas la requête, celle-ci étant dévolue à la première partie du projet.
+* Chaque argument est séparé par un espace. Ainsi, on exprime jamais "age<25"
+* Une chaine de caractère est mise entre des quotes ''. Il ne peut être qu'en dernière position.
+
+
+=== Autre exemple de traduction
+La traduction suivante conduit à la requête `optJoin.json` 
+
+[source,bash]
+----
+$ cat optJoin.alg 
+users: users.csv
+orders: orders.csv
+
+R1 = PROJ users id name
+R2 = JOIN R1 orders id user_id
+R = PROJ R2 name amount
+----
+
+
+== Description du travail à réaliser
+
+
+* L’application doit être construite avec Maven. Elle doit produire un JAR avec ses dépendances.
+
+* L’application qui exécute le MMA doit appliquer le principe de l’évaluation fonctionnelle.
+
+* Vous devrez compléter le fichier `README.adoc` en décrivant comment vous avez réalisé le MMA.
+
+* Des tests unitaires sont requis.
+
+== Evaluation de votre Projet
+
+* Un automate lancera la construction de votre projet, puis appliquera plusieurs requêtes algébriques. Si le résultat de l’évaluation est conforme, vous obtiendrez des points. Dans le cas contraire, aucune réclamation ne sera possible. Pour rappel:
+  .  Votre code doit fonctionner suivant les exigences décrites dans "Contraintes sur les Répertoires de Requêtes". L'automate lancera votre jar dans un répertoire contenant une requête et effectura une évaluation.
+
+  . Vos fichiers de données CSV en entrée ainsi que le fichier CSV de sortie doivent être "propres". Cela signifie qu'il ne doit pas y avoir d'espace avant, en fin de chaîne, au début et à la fin d'une valeur d'attribut (qui sont séparée **obligatoirement par une virgule**). Par exemple : "albert, 16, rue du poisson" n'est pas correct. Il faut: "albert,16,rue du poisson". Pas de quote autour des chaines de caractères.
+
+  . L'automate s'attend, pour les tests JUnit 5, à voir une ligne du style `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`. Si votre `pom.xml`` est mal configuré et qu'il ne voit pas cette ligne, la note sera impactée.
+
+* L'automate peut également vérifier:
+   - les tests unitaires ainsi que votre mise en œuvre, en se basant sur l'approche fonctionnelle.
+
+   - si votre code respecte les normes de style pour la rédaction du code Java et les exigences de couverture des tests unitaires.
+
+   - si vous avez effectué des "commits" git régulièrement avec des messages clairs.
+
+   - la similitude (plagiat) des codes produits par vous tous est effectuée à l'aide de l'outil _Jplag_. L'objectif de ces contrôles est de vous encourager à développer votre propre code, afin d'approfondir vos compétences et d'assimiler de nouvelles notions, ce qui ne peut être réalisé en se contentant de copier. 
+
+
+  - si le clonage de votre dépôt Git contient des fichiers indésirables (tels que .class ou .jar), cela pourrait refléter un manque de rigueur, car vous n'avez pas correctement configuré votre fichier `.gitignore`` pour exclure ces fichiers inutiles.
+
+
+== À compléter ici:
+
+> Quelles bibliothèques ont été utilisées et pourquoi ?
+
+> Décrire les relations d'héritage ou autres entre vos classes
+
+> Quel est le rôle des différentes classes ?
+
+> Pourquoi Json est bien/pas bien adapté pour l'interprétation un plan d'execution ?
+
+> Quelles classes avez vous utilisées pour la lecture d'un Json ?
+
+> Comment consulter le rapport de couverture de code par les tests ?
+
+> Quels avantages apporte une approche de programmation non impérative, mais fonctionnelle, pour l'évaluation des requêtes dans votre projet ?
+
+> Y a-t-il des bibliothèques Java qui permettraient de lire un fichier CSV et de l'instancier comme une collection ?
+
+> Comment avez-vous géré la variabilité du nombre de colonnes dans une table représentée dans une collection ?
+
+> Quelles évolutions peut-on envisager ?
+
+== Références
+* Quelques bibliothèques :
+http://fusesource.github.io/jansi/[JAnsi] (couleur dans un terminal),
+https://google.github.io/gson/UserGuide.html[gson] (gestion des Jsons)
+
+
