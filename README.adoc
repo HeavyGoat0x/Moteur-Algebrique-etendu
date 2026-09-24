@@ -4,24 +4,25 @@ Votre NC: ..... et Nom: ...
 
 Projet individuel.
 
-L’an dernier, nous avons lancé un projet qui a rencontré un grand succès : un mini moteur algébrique. Nous avons décidé de l’étendre cette année en vous le proposant dans une situation de génie logiciel plus proche de ce que vous rencontrerez dans le monde du travail, à savoir améliorer ou étendre un projet existant. Pour cela, nous vous fournissons l’un des projets de l’an dernier sur le site Persée. Le dépôt s’appelle « prj_org » que vous avez dû cloner pour pouvoir travailler sur votre version. L'énnonce de l'an dernier est fournis ci-dessous.
+L’an dernier, nous avons lancé un projet qui a rencontré un grand succès : un mini moteur algébrique. Nous avons décidé de l’étendre cette année en vous le proposant dans une situation de génie logiciel plus proche de ce que vous rencontrerez dans le monde du travail, à savoir améliorer ou étendre un projet existant. Pour cela, nous vous fournissons l’un des projets de l’an dernier sur le site Persée. Le dépôt s’appelle « prj_org » que vous devez cloner pour pouvoir travailler sur votre version. L'énnonce de l'an dernier est fournis ci-dessous.
 
 Dans une entreprise, vous devez créer une branche pour y apporter votre contribution, puis, en tant que chef de projet, vous devrez l'intégrer dans la branche principale à la fin.
 
 Pour le projet, on vous demande:
  
-1. de vous approprier le code existant et, suivant votre expertise, d’y apporter les améliorations possibles (par exemple, s’il n’a pas utilisé les interfaces ou l’héritage, afin de construire une architecture logicielle plus solide et ainsi améliorer le projet). Si nécessaire, vous améliorez le code en conséquence.
+1. de vous approprier le code existant et, vous devez identifier au moins une amélioration architecturale pertinente et l'implémenter. Il ne s'agit pas de modifier le code sans justification. Par exemple, si les différents opérateurs sont traités par une succession de if ou switch, vous pourrez proposer une architecture permettant de représenter les opérateurs de manière plus extensible. Si une interface ou une classe abstraite est déjà pertinente dans le code fourni, vous pouvez la conserver et justifier ce choix. Toute modification architecturale devra être justifiée dans RENDU.md.
 
 2. de rajouter des tests unitaires sur le code existant et des tests permettant de vérifier que les opérateurs fournissent le bon résultat.
 
-3. d’ajouter un opérateur d’agrégation de votre choix, ainsi que les opérateurs ensemblistes : union, intersection et différence. Parmi les tests unitaires, certains devront permettre de démontrer, à l’aide des données et des plans d’exécution contenus dans le dépôt Git, le bon fonctionnement du projet.
+3. Ajouter au moteur un opérateur d’agrégation de votre choix, ainsi que les opérateurs ensemblistes UNION, INTERSECTION et DIFFERENCE. Ces opérateurs doivent être intégrés au mécanisme d’évaluation existant et utilisables dans un plan d’exécution. Pour les opérateurs ensemblistes, les deux relations doivent avoir le même schéma et le résultat ne doit pas contenir de doublons. Une incompatibilité de schéma devra être gérée explicitement. Des tests unitaires devront vérifier le bon fonctionnement des nouveaux opérateurs, dont certains à partir des données et des plans d’exécution fournis dans le dépôt Git.
+
 
 Les spécifications sont identiques à l'énoncé de l'année dernière.
 
-Vous devrez rédiger un document RENDU.md (léger mais précis) nous décrivant le travail effectué (exemple : j'ai ré‑architecturé …) et les preuves/résultats obtenus (exemple : je place les deux lots de données dans le document et je copie le résultat issu du jUnit dans celui‑ci). Attention : ce document sera lu lors de votre soutenance dans le temps imparti. Vous devez vous débrouiller pour que l’on puisse comprendre votre contribution en lisant le document en moins de 2 minutes !
+Vous devrez rédiger un document RENDU.md (léger mais précis) nous décrivant le travail effectué (exemple : j'ai ré‑architecturé …) et les preuves/résultats obtenus (exemple : je place les deux lots de données dans le document et je copie le résultat issu du jUnit dans celui‑ci). Attention : ce document sera lu lors de votre soutenance dans le temps imparti. Vous devez faire le nécessaire pour que l’on puisse comprendre votre contribution en lisant le document en moins de 2 minutes !
 
 
-**Notez** que des avenants et/ou clarifications à ce projet seront publiés sur Persee dans les annonces. Toutes questions posées par mail ne seront pas répondues directement, mais la réponse se trouvera sur Persee.
+**À NOTER :** Des avenants et/ou clarifications à ce projet seront publiés sur Persee dans les annonces. Toutes questions posées par mail ne seront pas répondues directement, mais la réponse se trouvera sur Persee.
 
 
 = Ennoncé de l'an dernier
@@ -253,6 +254,15 @@ R = PROJ R2 name amount
 
 
 == À compléter ici:
+> Quelles classes existantes avez-vous modifiées et pourquoi ?
+
+> Quelles nouvelles classes avez-vous ajoutées et quel est leur rôle ?
+
+> Comment avez-vous intégré les nouveaux opérateurs (UNION, INTERSECTION, DIFFERENCE et l’agrégation) au mécanisme d’évaluation existant ?
+
+> Comment déterminez-vous que deux lignes sont identiques pour les opérateurs ensemblistes ?
+
+> Quels tests avez-vous ajoutés pour vérifier les nouveaux opérateurs et que vérifient-ils ?
 
 > Quelles bibliothèques ont été utilisées et pourquoi ?
 
@@ -273,6 +283,7 @@ R = PROJ R2 name amount
 > Comment avez-vous géré la variabilité du nombre de colonnes dans une table représentée dans une collection ?
 
 > Quelles évolutions peut-on envisager ?
+
 
 == Références
 * Quelques bibliothèques :
