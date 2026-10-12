@@ -1,9 +1,12 @@
-# Fichiers et dossiers générés par Maven
+# Fichiers générés par Maven
 target/
+*.class
+*.jar
 pom.xml.versionsBackup
 dependency-reduced-pom.xml
 build/
-.mvn/
+out/
+bin/
 
 # Fichiers de configuration IDE
 .idea/
@@ -14,7 +17,6 @@ build/
 .classpath
 .project
 .settings/
-bin/
 
 # Fichiers de logs et temporaires
 *.kill
@@ -23,10 +25,11 @@ bin/
 temp/
 tmp/
 
-# Fichiers de cache
+# Fichiers de cache et système
 *.swp
 *~
 .DS_Store
+Thumbs.db
 
 # Fichiers de configuration locaux
 .env

@@ -4,27 +4,63 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Table en mémoire : un schéma fixe (noms de colonnes) et une liste de lignes.
+ */
 public class Table {
-    private final List<String> columns;   // colonnes fixes
-    private final List<Row> rows;         // lignes
 
-    public Table(List<String> columns) {
-        this.columns = List.copyOf(columns);
-        this.rows = new ArrayList<>();
+  private final List<String> columns;   // colonnes fixes
+  private final List<Row> rows;         // lignes
+
+  /**
+   * Crée une table vide.
+   *
+   * @param columns noms des colonnes, dans l'ordre
+   */
+  public Table(List<String> columns) {
+    this.columns = List.copyOf(columns);
+    this.rows = new ArrayList<>();
+  }
+
+  /**
+   * Renvoie la position d'une colonne.
+   *
+   * @param colName nom de la colonne
+   * @return son index dans le schéma
+   * @throws IllegalArgumentException si la colonne n'existe pas
+   */
+  public int getColumnIndex(String colName) {
+    int idx = columns.indexOf(colName);
+    if (idx == -1) {
+      throw new IllegalArgumentException("Colonne inconnue: " + colName);
     }
+    return idx;
+  }
 
-      public int getColumnIndex(String colName) {
-        int idx = columns.indexOf(colName);
-        if (idx == -1) throw new IllegalArgumentException("Colonne inconnue: " + colName);
-        return idx;
-    }
-    
-    public List<String> getColumns() { return columns; }
+  /**
+   * Renvoie le schéma de la table.
+   *
+   * @return la liste immuable des noms de colonnes
+   */
+  public List<String> getColumns() {
+    return columns;
+  }
 
-    public List<Row> getRows() { return Collections.unmodifiableList(rows); }
+  /**
+   * Renvoie les lignes de la table.
+   *
+   * @return une vue non modifiable des lignes
+   */
+  public List<Row> getRows() {
+    return Collections.unmodifiableList(rows);
+  }
 
-        // accepte une Row
-    public void addRow(Row row) {
-        rows.add(row);
-    }
+  /**
+   * Ajoute une ligne à la fin de la table.
+   *
+   * @param row ligne à ajouter
+   */
+  public void addRow(Row row) {
+    rows.add(row);
+  }
 }

@@ -1,6 +1,6 @@
 = Un Mini Moteur Algébrique etendu
 
-Votre NC: ..... et Nom: ...
+Votre NC: 10 et Nom: AMIEUR Ramy Abderraouf
 
 Projet individuel.
 
