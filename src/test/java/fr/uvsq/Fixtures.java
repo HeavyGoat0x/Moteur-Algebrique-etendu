@@ -3,7 +3,7 @@ package fr.uvsq;
 import java.util.List;
 
 /**
- * Données partagées par les tests : mêmes valeurs que data/users.csv, construites en mémoire.
+ * Données partagées par les tests : mêmes valeurs que data/users.csv et data/orders.csv.
  */
 final class Fixtures {
 
@@ -17,6 +17,15 @@ final class Fixtures {
     users.addRow(new Row(List.of(3, "Charlie", 27)));
     users.addRow(new Row(List.of(4, "David", 19)));
     return users;
+  }
+
+  static Table orders() {
+    Table orders = new Table(List.of("id", "user_id", "amount"));
+    orders.addRow(new Row(List.of(10, 2, 100)));
+    orders.addRow(new Row(List.of(11, 1, 150)));
+    orders.addRow(new Row(List.of(12, 2, 200)));
+    orders.addRow(new Row(List.of(13, 3, 50)));
+    return orders;
   }
 
   // Row n'a pas d'equals : on compare les listes de valeurs, ligne par ligne
