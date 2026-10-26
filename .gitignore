@@ -8,6 +8,9 @@ build/
 out/
 bin/
 
+# Sorties des exécutions de démonstration lancées depuis data/
+data/results/
+
 # Fichiers de configuration IDE
 .idea/
 .vscode/

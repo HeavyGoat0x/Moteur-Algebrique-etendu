@@ -1,0 +1,18 @@
+{
+  "tables": {
+    "users": "users.csv",
+    "orders": "orders.csv"
+  },
+  "plan": {
+    "type": "PROJECT",
+    "columns": ["name"],
+    "input": {
+      "type": "SELECT",
+      "predicate": "age < 25",
+      "input": {
+        "type": "SCAN",
+        "table": "users"
+      }
+    }
+  }
+}

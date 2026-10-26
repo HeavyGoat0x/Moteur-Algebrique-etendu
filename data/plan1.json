@@ -1,0 +1,23 @@
+{
+  "tables": {
+    "users": "users.csv",
+    "orders": "orders.csv"
+  },
+  "plan": {
+    "type": "PROJECT",
+    "columns": ["amount", "name"],
+    "input": {
+      "type": "JOIN",
+      "left": {
+        "type": "SCAN",
+        "table": "users"
+      },
+      "right": {
+        "type": "SCAN",
+        "table": "orders"
+      },
+      "onLeft": "id",
+      "onRight": "user_id"
+    }
+  }
+}
