@@ -106,4 +106,13 @@ class PlanBuilderTest {
         """);
     assertThrows(IllegalArgumentException.class, () -> builder.build(plan));
   }
+
+  @Test
+  void register_nouveauType_estConstruitParBuild() throws IOException {
+    builder.register("IDENTITE", (node, b) -> b.build(node.getAsJsonObject("input")));
+    Table resultat = executer("""
+        {"type": "IDENTITE", "input": {"type": "SCAN", "table": "users"}}
+        """);
+    assertEquals(Fixtures.valeurs(Fixtures.users()), Fixtures.valeurs(resultat));
+  }
 }
