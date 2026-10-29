@@ -46,6 +46,27 @@ class TableTest {
   }
 
   @Test
+  void constructeur_avecLignes_conserveLesLignesDansOrdre() {
+    Table table = new Table(List.of("id", "name", "age"), List.of(alice, bob));
+    assertEquals(List.of(alice, bob), table.getRows());
+  }
+
+  @Test
+  void constructeur_lignesImmuables_addRowResteDisponible() {
+    Table table = new Table(List.of("id", "name", "age"), List.of(alice));
+    table.addRow(bob);
+    assertEquals(List.of(alice, bob), table.getRows());
+  }
+
+  @Test
+  void constructeur_listeDeLignesModifieeApres_tableInchangee() {
+    List<Row> lignes = new ArrayList<>(List.of(alice));
+    Table table = new Table(List.of("id", "name", "age"), lignes);
+    lignes.add(bob);
+    assertEquals(List.of(alice), table.getRows());
+  }
+
+  @Test
   void getColumnIndex_colonneExistante_renvoieSaPosition() {
     assertEquals(1, users.getColumnIndex("name"));
   }
