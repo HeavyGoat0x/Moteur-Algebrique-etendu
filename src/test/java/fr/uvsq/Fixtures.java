@@ -28,7 +28,8 @@ final class Fixtures {
     return orders;
   }
 
-  // Row n'a pas d'equals : on compare les listes de valeurs, ligne par ligne
+  // Valeurs brutes, ligne par ligne : plus strict que Row.equals (1 et 1.0 restent différents),
+  // ce qui vérifie aussi le type, donc le format de sortie
   static List<List<Object>> valeurs(Table table) {
     return table.getRows().stream().map(Row::getValues).toList();
   }
