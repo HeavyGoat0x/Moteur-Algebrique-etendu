@@ -42,7 +42,7 @@ public class Table {
   public int getColumnIndex(String colName) {
     int idx = columns.indexOf(colName);
     if (idx == -1) {
-      throw new IllegalArgumentException("Colonne inconnue: " + colName);
+      throw new IllegalArgumentException("Colonne inconnue : " + colName);
     }
     return idx;
   }
