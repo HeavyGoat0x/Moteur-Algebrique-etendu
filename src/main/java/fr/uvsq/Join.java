@@ -1,7 +1,6 @@
 package fr.uvsq;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -39,13 +38,14 @@ class Join implements Operator {
     List<String> mergedCols =
         Stream.concat(leftCols.stream(), keptRight.stream().map(rightCols::get)).toList();
 
-    int leftIdx = leftCols.indexOf(leftCol);
-    int rightIdx = rightCols.indexOf(rightCol);
+    int leftIdx = leftTable.getColumnIndex(leftCol);
+    int rightIdx = rightTable.getColumnIndex(rightCol);
 
     // chaque ligne de gauche est associée à toutes les lignes de droite de même clé
     List<Row> rows = leftTable.getRows().stream()
         .flatMap(leftRow -> rightTable.getRows().stream()
-            .filter(rightRow -> Objects.equals(leftRow.get(leftIdx), rightRow.get(rightIdx)))
+            .filter(rightRow -> Row.normalize(leftRow.get(leftIdx))
+                .equals(Row.normalize(rightRow.get(rightIdx))))
             .map(rightRow -> merge(leftRow, rightRow, keptRight)))
         .toList();
     return new Table(mergedCols, rows);

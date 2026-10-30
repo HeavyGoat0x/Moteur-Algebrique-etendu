@@ -1,6 +1,7 @@
 package fr.uvsq;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -88,6 +89,34 @@ class JoinTest {
     assertEquals(List.of(
         List.of(150, "Alice"), List.of(100, "Bob"), List.of(200, "Bob"), List.of(50, "Charlie")),
         Fixtures.valeurs(resultat));
+  }
+
+  // Comme en SQL (statut Q3) : la clé 1 (Integer) correspond à 1.0 (Double)
+  @Test
+  void execute_cleEntiereEtDecimale_associeLesLignes() {
+    Table resultat = joindre(users, achats(List.of(1.0, 150)), "id", "user_id");
+    assertEquals(List.of(List.of(1, "Alice", 22, 1.0, 150)), Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void execute_cleGaucheInconnue_leveIllegalArgument() {
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> joindre(users, achats(List.of(1, 150)), "idd", "user_id"));
+    assertTrue(e.getMessage().contains("idd"));
+  }
+
+  @Test
+  void execute_cleDroiteInconnue_leveIllegalArgument() {
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+        () -> joindre(users, achats(List.of(1, 150)), "id", "client"));
+    assertTrue(e.getMessage().contains("client"));
+  }
+
+  // Comme en SQL, la requête est refusée même s'il n'y a aucune ligne à lire
+  @Test
+  void execute_cleInconnueSurTablesVides_leveIllegalArgument() {
+    Table vide = new Table(List.of("id", "name", "age"));
+    assertThrows(IllegalArgumentException.class, () -> joindre(vide, achats(), "idd", "user_id"));
   }
 
   @Test

@@ -21,7 +21,7 @@ class Project implements Operator {
 
     // positions des colonnes demandées, calculées une seule fois pour toutes les lignes
     List<Integer> indexes = columns.stream()
-        .map(inTable.getColumns()::indexOf)
+        .map(inTable::getColumnIndex)
         .toList();
 
     List<Row> rows = inTable.getRows().stream()

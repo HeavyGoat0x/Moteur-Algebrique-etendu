@@ -1,6 +1,7 @@
 package fr.uvsq;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -50,6 +51,22 @@ class ProjectTest {
     Operator selection = new Select(new Scan(users), PredicateParser.parse("age < 25"));
     Table resultat = new Project(selection, List.of("name")).execute();
     assertEquals(List.of(List.of("Alice"), List.of("David")), Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void execute_colonneInconnue_leveIllegalArgument() {
+    Project projection = new Project(new Scan(users), List.of("name", "email"));
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, projection::execute);
+    assertTrue(e.getMessage().contains("email"));
+  }
+
+  // Comme en SQL, la requête est refusée même s'il n'y a aucune ligne à lire
+  @Test
+  void execute_colonneInconnueSurTableVide_leveIllegalArgument() {
+    Table vide = new Table(List.of("id", "name", "age"));
+    Project projection = new Project(new Scan(vide), List.of("email"));
+    assertThrows(IllegalArgumentException.class, projection::execute);
   }
 
   @Test
