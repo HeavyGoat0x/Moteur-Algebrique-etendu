@@ -1,11 +1,15 @@
 package fr.uvsq;
 
+import java.util.Set;
+
 /**
  * Analyse les prédicats à trois parties "colonne opérateur valeur".
  *
  * <p>Exemples : "age > 30" ou "nom = 'yeh'". N'utilise pas java.util.function.Predicate.
  */
 public class PredicateParser {
+
+  private static final Set<String> OPERATORS = Set.of(">", "<", ">=", "<=", "=", "==", "!=", "<>");
 
   /**
    * Interface fonctionnelle personnalisée : condition évaluée sur une ligne de table.
@@ -26,12 +30,13 @@ public class PredicateParser {
   /**
    * Analyse un prédicat de la forme "colonne opérateur valeur".
    *
-   * @param expr prédicat, les trois parties séparées par un espace
+   * @param expr prédicat, les trois parties séparées par un ou plusieurs blancs
    * @return la condition correspondante
-   * @throws IllegalArgumentException si le prédicat n'a pas trois parties
+   * @throws IllegalArgumentException si le prédicat n'a pas trois parties ou si l'opérateur
+   *     est inconnu
    */
   public static RowPredicate parse(String expr) {
-    String[] parts = expr.trim().split(" ", 3);
+    String[] parts = expr.trim().split("\\s+", 3);
     if (parts.length != 3) {
       throw new IllegalArgumentException("Prédicat invalide, doit avoir 3 parties : " + expr);
     }
@@ -39,6 +44,10 @@ public class PredicateParser {
     String col = parts[0];
     String op = parts[1];
     String valStr = parts[2];
+
+    if (!OPERATORS.contains(op)) {
+      throw new IllegalArgumentException("Opérateur inconnu : " + op);
+    }
 
     // enlever les quotes pour les chaînes
     if (valStr.startsWith("'") && valStr.endsWith("'")) {
