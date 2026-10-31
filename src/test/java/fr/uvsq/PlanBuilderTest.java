@@ -1,5 +1,6 @@
 package fr.uvsq;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -10,8 +11,30 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class PlanBuilderTest {
+
+  // Un nœud complet de chaque type : les tests de champ manquant en retirent un champ
+  private static final Map<String, String> NOEUDS_COMPLETS = Map.of(
+      "SCAN", """
+          {"type": "SCAN", "table": "users"}
+          """,
+      "SELECT", """
+          {"type": "SELECT", "predicate": "age < 25",
+           "input": {"type": "SCAN", "table": "users"}}
+          """,
+      "PROJECT", """
+          {"type": "PROJECT", "columns": ["name"],
+           "input": {"type": "SCAN", "table": "users"}}
+          """,
+      "JOIN", """
+          {"type": "JOIN", "onLeft": "id", "onRight": "user_id",
+           "left": {"type": "SCAN", "table": "users"},
+           "right": {"type": "SCAN", "table": "orders"}}
+          """);
 
   private PlanBuilder builder;
 
@@ -105,6 +128,28 @@ class PlanBuilderTest {
         {"type": "INCONNU", "input": {"type": "SCAN", "table": "users"}}
         """);
     assertThrows(IllegalArgumentException.class, () -> builder.build(plan));
+  }
+
+  // Témoin : sans champ retiré, chaque nœud complet se construit
+  @ParameterizedTest
+  @ValueSource(strings = {"SCAN", "SELECT", "PROJECT", "JOIN"})
+  void build_noeudComplet_seConstruit(String type) {
+    assertDoesNotThrow(() -> builder.build(json(NOEUDS_COMPLETS.get(type))));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+      "SCAN, type", "SCAN, table",
+      "SELECT, input", "SELECT, predicate",
+      "PROJECT, input", "PROJECT, columns",
+      "JOIN, left", "JOIN, right", "JOIN, onLeft", "JOIN, onRight"
+  })
+  void build_champManquant_leveIllegalArgumentQuiLeNomme(String type, String champ) {
+    JsonObject noeud = json(NOEUDS_COMPLETS.get(type));
+    noeud.remove(champ);
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> builder.build(noeud));
+    assertEquals("Champ manquant : " + champ, e.getMessage());
   }
 
   @Test

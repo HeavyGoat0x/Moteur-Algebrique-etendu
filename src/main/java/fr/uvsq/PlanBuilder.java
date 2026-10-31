@@ -1,5 +1,6 @@
 package fr.uvsq;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,10 +41,11 @@ public class PlanBuilder {
    *
    * @param node nœud JSON portant un champ "type" (SCAN, SELECT, PROJECT, JOIN)
    * @return l'opérateur racine du sous-plan
-   * @throws IllegalArgumentException si le type ou la table est inconnu
+   * @throws IllegalArgumentException si le type ou la table est inconnu, ou si un champ
+   *     obligatoire manque
    */
   public Operator build(JsonObject node) {
-    String type = node.get("type").getAsString();
+    String type = required(node, "type").getAsString();
     OperatorFactory factory = factories.get(type);
     if (factory == null) {
       throw new IllegalArgumentException("Type inconnu : " + type);
@@ -61,27 +63,36 @@ public class PlanBuilder {
   }
 
   private static Operator scan(JsonObject node, PlanBuilder builder) {
-    return new Scan(builder.table(node.get("table").getAsString()));
+    return new Scan(builder.table(required(node, "table").getAsString()));
   }
 
   private static Operator select(JsonObject node, PlanBuilder builder) {
-    Operator input = builder.build(node.getAsJsonObject("input"));
-    PredicateParser.RowPredicate pred = PredicateParser.parse(node.get("predicate").getAsString());
+    Operator input = builder.build(required(node, "input").getAsJsonObject());
+    PredicateParser.RowPredicate pred =
+        PredicateParser.parse(required(node, "predicate").getAsString());
     return new Select(input, pred);
   }
 
   private static Operator project(JsonObject node, PlanBuilder builder) {
-    Operator input = builder.build(node.getAsJsonObject("input"));
+    Operator input = builder.build(required(node, "input").getAsJsonObject());
     List<String> cols = new ArrayList<>();
-    node.getAsJsonArray("columns").forEach(e -> cols.add(e.getAsString()));
+    required(node, "columns").getAsJsonArray().forEach(e -> cols.add(e.getAsString()));
     return new Project(input, cols);
   }
 
   private static Operator join(JsonObject node, PlanBuilder builder) {
-    Operator left = builder.build(node.getAsJsonObject("left"));
-    Operator right = builder.build(node.getAsJsonObject("right"));
-    String leftCol = node.get("onLeft").getAsString();
-    String rightCol = node.get("onRight").getAsString();
+    Operator left = builder.build(required(node, "left").getAsJsonObject());
+    Operator right = builder.build(required(node, "right").getAsJsonObject());
+    String leftCol = required(node, "onLeft").getAsString();
+    String rightCol = required(node, "onRight").getAsString();
     return new Join(left, right, leftCol, rightCol);
+  }
+
+  // Champ obligatoire d'un nœud JSON : message clair au lieu d'une NullPointerException de Gson
+  static JsonElement required(JsonObject node, String field) {
+    if (!node.has(field)) {
+      throw new IllegalArgumentException("Champ manquant : " + field);
+    }
+    return node.get(field);
   }
 }

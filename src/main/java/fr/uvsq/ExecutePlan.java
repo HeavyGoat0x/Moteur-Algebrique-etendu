@@ -20,8 +20,8 @@ public class ExecutePlan {
   /**
    * Exécute la requête passée en argument et indique le fichier produit.
    *
-   * <p>Une erreur de l'utilisateur (fichier absent, JSON mal formé, table, colonne ou type inconnu)
-   * est affichée sur la sortie d'erreur, sans pile d'appels.
+   * <p>Une erreur de l'utilisateur (fichier absent, JSON mal formé ou incomplet, table, colonne
+   * ou type inconnu) est affichée sur la sortie d'erreur, sans pile d'appels.
    *
    * @param args un seul argument, le chemin du fichier JSON de la requête
    */
@@ -46,7 +46,7 @@ public class ExecutePlan {
     JsonObject config = JsonParser.parseString(Files.readString(configFile)).getAsJsonObject();
 
     // Charger les tables
-    JsonObject tablesJson = config.getAsJsonObject("tables");
+    JsonObject tablesJson = PlanBuilder.required(config, "tables").getAsJsonObject();
     Map<String, Table> tables = new HashMap<>();
     for (String tableName : tablesJson.keySet()) {
       String csvPath = tablesJson.get(tableName).getAsString();
@@ -54,7 +54,8 @@ public class ExecutePlan {
     }
 
     // Construire et exécuter le plan → Table finale
-    Operator plan = new PlanBuilder(tables).build(config.getAsJsonObject("plan"));
+    JsonObject planJson = PlanBuilder.required(config, "plan").getAsJsonObject();
+    Operator plan = new PlanBuilder(tables).build(planJson);
     Table resultTable = plan.execute();
 
     // Écrire le CSV avec schéma, en créant son dossier s'il n'existe pas

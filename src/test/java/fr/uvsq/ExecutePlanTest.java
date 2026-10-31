@@ -118,6 +118,17 @@ class ExecutePlanTest {
     assertTrue(erreurDe(requete.toString()).contains("Table inconnue : clients"));
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"tables", "plan"})
+  void main_champDeRequeteManquant_afficheLeChamp(String champ) throws Exception {
+    JsonObject requete = JsonParser.parseString("""
+        {"tables": {}, "plan": {"type": "SCAN", "table": "users"}}
+        """).getAsJsonObject();
+    requete.remove(champ);
+    Path fichier = Files.writeString(dossier.resolve("requete.json"), requete.toString());
+    assertTrue(erreurDe(fichier.toString()).contains("Champ manquant : " + champ));
+  }
+
   @Test
   void main_jsonMalForme_afficheUneErreur() throws Exception {
     Path requete = Files.writeString(dossier.resolve("requete.json"), "{\"tables\": {");
