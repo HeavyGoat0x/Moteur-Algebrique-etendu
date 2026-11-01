@@ -75,6 +75,35 @@ public class Row {
     return values;
   }
 
+  // Clé de comparaison « comme SQL » : 1 et 1.0 égaux ; + 0.0 ramène -0.0 à 0.0
+  static Object normalize(Object value) {
+    if (value instanceof Number n) {
+      return n.doubleValue() + 0.0;
+    }
+    return value;
+  }
+
+  // Valeurs normalisées : seule base de equals et hashCode, ce qui garantit leur contrat
+  private List<Object> comparisonKey() {
+    return values.stream().map(Row::normalize).toList();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof Row r)) {
+      return false;
+    }
+    return comparisonKey().equals(r.comparisonKey());
+  }
+
+  @Override
+  public int hashCode() {
+    return comparisonKey().hashCode();
+  }
+
   @Override
   public String toString() {
     return values.toString();

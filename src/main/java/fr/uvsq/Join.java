@@ -1,8 +1,8 @@
 package fr.uvsq;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Équi-jointure de deux tables sur une colonne de chaque côté.
@@ -25,35 +25,35 @@ class Join implements Operator {
   public Table execute() {
     Table leftTable = left.execute();
     Table rightTable = right.execute();
+    List<String> leftCols = leftTable.getColumns();
+    List<String> rightCols = rightTable.getColumns();
+
+    // colonnes de droite gardées : celles dont le nom n'existe pas déjà à gauche
+    List<Integer> keptRight = IntStream.range(0, rightCols.size())
+        .filter(i -> !leftCols.contains(rightCols.get(i)))
+        .boxed()
+        .toList();
 
     // colonnes fusionnées
-    List<String> mergedCols = new ArrayList<>(leftTable.getColumns());
-    for (String c : rightTable.getColumns()) {
-      if (!mergedCols.contains(c)) {
-        mergedCols.add(c);
-      }
-    }
+    List<String> mergedCols =
+        Stream.concat(leftCols.stream(), keptRight.stream().map(rightCols::get)).toList();
 
-    Table outTable = new Table(mergedCols);
+    int leftIdx = leftTable.getColumnIndex(leftCol);
+    int rightIdx = rightTable.getColumnIndex(rightCol);
 
-    int leftIdx = leftTable.getColumns().indexOf(leftCol);
-    int rightIdx = rightTable.getColumns().indexOf(rightCol);
+    // chaque ligne de gauche est associée à toutes les lignes de droite de même clé
+    List<Row> rows = leftTable.getRows().stream()
+        .flatMap(leftRow -> rightTable.getRows().stream()
+            .filter(rightRow -> Row.normalize(leftRow.get(leftIdx))
+                .equals(Row.normalize(rightRow.get(rightIdx))))
+            .map(rightRow -> merge(leftRow, rightRow, keptRight)))
+        .toList();
+    return new Table(mergedCols, rows);
+  }
 
-    for (Row leftRow : leftTable.getRows()) {
-      for (Row rightRow : rightTable.getRows()) {
-        if (Objects.equals(leftRow.get(leftIdx), rightRow.get(rightIdx))) {
-          List<Object> mergedVals = new ArrayList<>(leftRow.getValues());
-          for (int i = 0; i < rightTable.getColumns().size(); i++) {
-            String c = rightTable.getColumns().get(i);
-            if (!leftTable.getColumns().contains(c)) {
-              mergedVals.add(rightRow.get(i));
-            }
-          }
-          outTable.addRow(new Row(mergedVals));
-        }
-      }
-    }
-
-    return outTable;
+  // valeurs de la ligne de gauche suivies des colonnes gardées de la ligne de droite
+  private static Row merge(Row leftRow, Row rightRow, List<Integer> keptRight) {
+    Stream<Object> rightValues = keptRight.stream().map(rightRow::get);
+    return new Row(Stream.concat(leftRow.getValues().stream(), rightValues).toList());
   }
 }

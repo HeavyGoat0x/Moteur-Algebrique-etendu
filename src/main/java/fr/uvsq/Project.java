@@ -1,6 +1,5 @@
 package fr.uvsq;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,18 +18,15 @@ class Project implements Operator {
   @Override
   public Table execute() {
     Table inTable = input.execute();
-    Table outTable = new Table(columns);
 
-    List<String> inCols = inTable.getColumns();
-    for (Row row : inTable.getRows()) {
-      List<Object> vals = new ArrayList<>();
-      for (String c : columns) {
-        int idx = inCols.indexOf(c);
-        vals.add(row.get(idx));
-      }
-      outTable.addRow(new Row(vals));
-    }
+    // positions des colonnes demandées, calculées une seule fois pour toutes les lignes
+    List<Integer> indexes = columns.stream()
+        .map(inTable::getColumnIndex)
+        .toList();
 
-    return outTable;
+    List<Row> rows = inTable.getRows().stream()
+        .map(row -> new Row(indexes.stream().map(row::get).toList()))
+        .toList();
+    return new Table(columns, rows);
   }
 }

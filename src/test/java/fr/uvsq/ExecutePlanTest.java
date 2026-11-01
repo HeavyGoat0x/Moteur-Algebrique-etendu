@@ -43,6 +43,19 @@ class ExecutePlanTest {
     return fichier;
   }
 
+  // Exécute main en capturant la sortie d'erreur
+  private static String erreurDe(String... args) {
+    PrintStream sortieErreur = System.err;
+    ByteArrayOutputStream capture = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(capture, true, StandardCharsets.UTF_8));
+    try {
+      ExecutePlan.main(args);
+    } finally {
+      System.setErr(sortieErreur);
+    }
+    return capture.toString(StandardCharsets.UTF_8);
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"plan1", "reqProjSel", "optJoin"})
   void main_planDuDepot_produitLeResultatAttendu(String nom) throws Exception {
@@ -65,5 +78,60 @@ class ExecutePlanTest {
       System.setOut(sortieStandard);
     }
     assertTrue(capture.toString(StandardCharsets.UTF_8).contains("Usage"));
+  }
+
+  @Test
+  void outputFile_sansChampOutput_renvoieResultsOutputCsv() {
+    assertEquals("results/output.csv", ExecutePlan.outputFile(new JsonObject()));
+  }
+
+  @Test
+  void outputFile_avecChampOutput_renvoieCeChemin() {
+    JsonObject config = new JsonObject();
+    config.addProperty("output", "sorties/resultat.csv");
+    assertEquals("sorties/resultat.csv", ExecutePlan.outputFile(config));
+  }
+
+  @Test
+  void run_dossierDeSortieAbsent_leCree() throws Exception {
+    Path sortie = dossier.resolve("nouveau").resolve("output.csv");
+
+    Path ecrit = ExecutePlan.run(preparerRequete("reqProjSel", sortie));
+
+    assertEquals(sortie, ecrit);
+    assertEquals(Files.readAllLines(EXPECTED.resolve("reqProjSel_expected.csv")),
+        Files.readAllLines(sortie));
+  }
+
+  @Test
+  void main_fichierAbsent_afficheFichierIntrouvable() {
+    String erreur = erreurDe(dossier.resolve("absent.json").toString());
+    assertTrue(erreur.contains("Fichier introuvable"));
+    assertTrue(erreur.contains("absent.json"));
+  }
+
+  @Test
+  void main_tableInconnue_afficheUnMessageClair() throws Exception {
+    Path requete = Files.writeString(dossier.resolve("requete.json"), """
+        {"tables": {}, "plan": {"type": "SCAN", "table": "clients"}}
+        """);
+    assertTrue(erreurDe(requete.toString()).contains("Table inconnue : clients"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"tables", "plan"})
+  void main_champDeRequeteManquant_afficheLeChamp(String champ) throws Exception {
+    JsonObject requete = JsonParser.parseString("""
+        {"tables": {}, "plan": {"type": "SCAN", "table": "users"}}
+        """).getAsJsonObject();
+    requete.remove(champ);
+    Path fichier = Files.writeString(dossier.resolve("requete.json"), requete.toString());
+    assertTrue(erreurDe(fichier.toString()).contains("Champ manquant : " + champ));
+  }
+
+  @Test
+  void main_jsonMalForme_afficheUneErreur() throws Exception {
+    Path requete = Files.writeString(dossier.resolve("requete.json"), "{\"tables\": {");
+    assertTrue(erreurDe(requete.toString()).startsWith("Erreur : "));
   }
 }

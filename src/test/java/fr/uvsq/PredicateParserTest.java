@@ -1,5 +1,6 @@
 package fr.uvsq;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class PredicateParserTest {
 
@@ -66,6 +68,12 @@ class PredicateParserTest {
     assertFalse(PredicateParser.parse("name > 'Alice'").test(bob, users));
   }
 
+  // Décision C21 : un nombre entre quotes reste comparé comme un nombre
+  @Test
+  void parse_nombreEntreQuotes_compareNumeriquement() {
+    assertTrue(PredicateParser.parse("age = '30'").test(bob, users));
+  }
+
   @Test
   void parse_chaineAvecEspace_conserveLaValeur() {
     Row bobSmith = new Row(List.of(3, "Bob Smith", 40));
@@ -80,6 +88,30 @@ class PredicateParserTest {
   @Test
   void parse_deuxParties_leveIllegalArgument() {
     assertThrows(IllegalArgumentException.class, () -> PredicateParser.parse("age <"));
+  }
+
+  // L'erreur part dès le parse, sans évaluer aucune ligne
+  @Test
+  void parse_operateurInconnu_leveIllegalArgument() {
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> PredicateParser.parse("age ~ 30"));
+    assertTrue(e.getMessage().contains("~"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {">", "<", ">=", "<=", "=", "==", "!=", "<>"})
+  void parse_operateurConnu_estAccepte(String operateur) {
+    assertDoesNotThrow(() -> PredicateParser.parse("age " + operateur + " 30"));
+  }
+
+  @Test
+  void parse_doubleEspace_estIgnore() {
+    assertTrue(PredicateParser.parse("age  =  30").test(bob, users));
+  }
+
+  @Test
+  void parse_tabulation_estUnSeparateur() {
+    assertTrue(PredicateParser.parse("age\t<\t25").test(alice, users));
   }
 
   @Test

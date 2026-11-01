@@ -1,5 +1,7 @@
 package fr.uvsq;
 
+import java.util.Set;
+
 /**
  * Analyse les prédicats à trois parties "colonne opérateur valeur".
  *
@@ -7,9 +9,12 @@ package fr.uvsq;
  */
 public class PredicateParser {
 
+  private static final Set<String> OPERATORS = Set.of(">", "<", ">=", "<=", "=", "==", "!=", "<>");
+
   /**
    * Interface fonctionnelle personnalisée : condition évaluée sur une ligne de table.
    */
+  @FunctionalInterface
   public interface RowPredicate {
 
     /**
@@ -25,12 +30,13 @@ public class PredicateParser {
   /**
    * Analyse un prédicat de la forme "colonne opérateur valeur".
    *
-   * @param expr prédicat, les trois parties séparées par un espace
+   * @param expr prédicat, les trois parties séparées par un ou plusieurs blancs
    * @return la condition correspondante
-   * @throws IllegalArgumentException si le prédicat n'a pas trois parties
+   * @throws IllegalArgumentException si le prédicat n'a pas trois parties ou si l'opérateur
+   *     est inconnu
    */
   public static RowPredicate parse(String expr) {
-    String[] parts = expr.trim().split(" ", 3);
+    String[] parts = expr.trim().split("\\s+", 3);
     if (parts.length != 3) {
       throw new IllegalArgumentException("Prédicat invalide, doit avoir 3 parties : " + expr);
     }
@@ -39,77 +45,62 @@ public class PredicateParser {
     String op = parts[1];
     String valStr = parts[2];
 
+    if (!OPERATORS.contains(op)) {
+      throw new IllegalArgumentException("Opérateur inconnu : " + op);
+    }
+
     // enlever les quotes pour les chaînes
     if (valStr.startsWith("'") && valStr.endsWith("'")) {
       valStr = valStr.substring(1, valStr.length() - 1);
     }
 
-    final String finalCol = col;
+    final String value = valStr;
+    final Double number = toNumber(value); // analysée une seule fois, pas à chaque ligne
 
-    final String finalOp = op;
-    final String finalVal = valStr;
-
-    // Retourne une instance de RowPredicate
-    return new RowPredicate() {
-      @Override
-      public boolean test(Row row, Table table) {
-        final int finalColIndex = table.getColumnIndex(finalCol);
-        Object cell = row.get(finalColIndex);
-        if (cell == null) {
-          return false;
-        }
-
-        // Comparaison numérique si possible
-        Double leftNum = null;
-        Double rightNum = null;
-        try {
-          if (cell instanceof Number n) {
-            leftNum = n.doubleValue();
-          } else {
-            leftNum = Double.parseDouble(cell.toString());
-          }
-
-          rightNum = Double.parseDouble(finalVal);
-        } catch (NumberFormatException e) {
-          // ce n'est pas un nombre → on comparera en chaîne
-        }
-
-        if (leftNum != null && rightNum != null) {
-          // Comparaison numérique
-          switch (finalOp) {
-            case ">":
-              return leftNum > rightNum;
-            case "<":
-              return leftNum < rightNum;
-            case ">=":
-              return leftNum >= rightNum;
-            case "<=":
-              return leftNum <= rightNum;
-            case "=":
-            case "==":
-              return leftNum.equals(rightNum);
-            case "!=":
-            case "<>":
-              return !leftNum.equals(rightNum);
-            default:
-              return false;
-          }
-        } else {
-          // Comparaison chaîne
-          String leftStr = cell.toString();
-          String rightStr = finalVal;
-          switch (finalOp) {
-            case "=":
-            case "==":
-              return leftStr.equals(rightStr);
-            case "!=":
-            case "<>":
-              return !leftStr.equals(rightStr);
-            default:
-              return false; // >, < non valides pour chaînes
-          }
-        }
+    return (row, table) -> {
+      Object cell = row.get(table.getColumnIndex(col));
+      if (cell == null) {
+        return false;
       }
+
+      // Comparaison numérique si possible, sinon comparaison de chaînes
+      Double cellNumber = toNumber(cell);
+      if (cellNumber != null && number != null) {
+        return compareNumbers(op, cellNumber, number);
+      }
+      return compareStrings(op, cell.toString(), value);
+    };
+  }
+
+  // Valeur numérique d'une cellule ou d'un texte, ou null si ce n'est pas un nombre
+  private static Double toNumber(Object o) {
+    if (o instanceof Number n) {
+      return n.doubleValue();
+    }
+    try {
+      return Double.parseDouble(o.toString());
+    } catch (NumberFormatException expected) {
+      return null;
+    }
+  }
+
+  private static boolean compareNumbers(String op, Double left, Double right) {
+    return switch (op) {
+      case ">" -> left > right;
+      case "<" -> left < right;
+      case ">=" -> left >= right;
+      case "<=" -> left <= right;
+      case "=", "==" -> left.equals(right);
+      case "!=", "<>" -> !left.equals(right);
+      default -> false;
+    };
+  }
+
+  private static boolean compareStrings(String op, String left, String right) {
+    return switch (op) {
+      case "=", "==" -> left.equals(right);
+      case "!=", "<>" -> !left.equals(right);
+      default -> false; // >, < non valides pour chaînes
     };
   }
 }

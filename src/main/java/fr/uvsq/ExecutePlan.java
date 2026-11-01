@@ -1,8 +1,11 @@
 package fr.uvsq;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,48 +15,61 @@ import java.util.Map;
  */
 public class ExecutePlan {
 
+  static final String DEFAULT_OUTPUT = "results/output.csv"; // emplacement attendu par l'automate
+
   /**
-   * Charge les tables et le plan du fichier JSON, exécute le plan et écrit le résultat en CSV.
+   * Exécute la requête passée en argument et indique le fichier produit.
+   *
+   * <p>Une erreur de l'utilisateur (fichier absent, JSON mal formé ou incomplet, table, colonne
+   * ou type inconnu) est affichée sur la sortie d'erreur, sans pile d'appels.
    *
    * @param args un seul argument, le chemin du fichier JSON de la requête
-   * @throws Exception si la lecture, l'exécution ou l'écriture échoue
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     if (args.length != 1) {
       System.out.println("Usage: java ExecutePlan config.json");
       return;
     }
 
-    String configFile = args[0];
+    try {
+      System.out.println("Résultat écrit dans " + run(Path.of(args[0])));
+    } catch (NoSuchFileException e) {
+      System.err.println("Fichier introuvable : " + e.getFile());
+    } catch (IOException | IllegalArgumentException | JsonParseException e) {
+      System.err.println("Erreur : " + e.getMessage());
+    }
+  }
 
+  // Charge les tables, exécute le plan et écrit le CSV ; renvoie le fichier écrit
+  static Path run(Path configFile) throws IOException {
     // Lire le fichier JSON
-    JsonObject config = JsonParser.parseString(Files.readString(Path.of(configFile)))
-        .getAsJsonObject();
+    JsonObject config = JsonParser.parseString(Files.readString(configFile)).getAsJsonObject();
 
     // Charger les tables
-    JsonObject tablesJson = config.getAsJsonObject("tables");
+    JsonObject tablesJson = PlanBuilder.required(config, "tables").getAsJsonObject();
     Map<String, Table> tables = new HashMap<>();
     for (String tableName : tablesJson.keySet()) {
       String csvPath = tablesJson.get(tableName).getAsString();
-      Table t = CsvUtils.readCsv(csvPath);  // lecture CSV → Table
-      tables.put(tableName, t);
+      tables.put(tableName, CsvUtils.readCsv(csvPath));  // lecture CSV → Table
     }
 
-    // Construire le plan
-    JsonObject planJson = config.getAsJsonObject("plan");
-    PlanBuilder builder = new PlanBuilder(tables);
-    Operator plan = builder.build(planJson);
-
-    // Exécuter le plan → Table finale
+    // Construire et exécuter le plan → Table finale
+    JsonObject planJson = PlanBuilder.required(config, "plan").getAsJsonObject();
+    Operator plan = new PlanBuilder(tables).build(planJson);
     Table resultTable = plan.execute();
 
-    // Fichier de sortie
-    String outputFile =
-        config.has("output") ? config.get("output").getAsString() : "results/output.csv";
+    // Écrire le CSV avec schéma, en créant son dossier s'il n'existe pas
+    Path output = Path.of(outputFile(config));
+    Path parent = output.getParent();
+    if (parent != null) {
+      Files.createDirectories(parent);
+    }
+    CsvUtils.writeCsv(output.toString(), resultTable);
+    return output;
+  }
 
-    // Écrire le CSV avec schéma
-    CsvUtils.writeCsv(outputFile, resultTable);
-
-    System.out.println("Résultat écrit dans " + outputFile);
+  // Fichier de sortie : champ "output" de la requête, sinon results/output.csv
+  static String outputFile(JsonObject config) {
+    return config.has("output") ? config.get("output").getAsString() : DEFAULT_OUTPUT;
   }
 }

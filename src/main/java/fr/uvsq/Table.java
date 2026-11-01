@@ -18,8 +18,18 @@ public class Table {
    * @param columns noms des colonnes, dans l'ordre
    */
   public Table(List<String> columns) {
+    this(columns, List.of());
+  }
+
+  /**
+   * Crée une table à partir d'une copie de ses lignes (résultat d'un flux, par exemple).
+   *
+   * @param columns noms des colonnes, dans l'ordre
+   * @param rows lignes de la table, dans l'ordre
+   */
+  public Table(List<String> columns, List<Row> rows) {
     this.columns = List.copyOf(columns);
-    this.rows = new ArrayList<>();
+    this.rows = new ArrayList<>(rows);
   }
 
   /**
@@ -32,7 +42,7 @@ public class Table {
   public int getColumnIndex(String colName) {
     int idx = columns.indexOf(colName);
     if (idx == -1) {
-      throw new IllegalArgumentException("Colonne inconnue: " + colName);
+      throw new IllegalArgumentException("Colonne inconnue : " + colName);
     }
     return idx;
   }
