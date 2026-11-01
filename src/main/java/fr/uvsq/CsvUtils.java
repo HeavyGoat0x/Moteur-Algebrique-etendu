@@ -35,9 +35,12 @@ public class CsvUtils {
   /**
    * Lit un fichier CSV dont la première ligne donne les noms de colonnes.
    *
+   * <p>Les lignes vides sont ignorées, par exemple en fin de fichier.
+   *
    * @param filename chemin du fichier à lire
    * @return la table lue, vide si le fichier est vide
    * @throws IOException si le fichier ne peut pas être lu
+   * @throws IllegalArgumentException si une ligne n'a pas autant de valeurs que l'en-tête
    */
   public static Table readCsv(String filename) throws IOException {
     List<String> lines = Files.readAllLines(Path.of(filename));
@@ -49,7 +52,11 @@ public class CsvUtils {
     List<String> columns = List.of(lines.get(0).split(",", -1));
 
     // Lignes suivantes → données
-    List<Row> rows = lines.stream().skip(1).map(CsvUtils::parseLine).toList();
+    List<Row> rows = lines.stream()
+        .skip(1)
+        .filter(line -> !line.isBlank())
+        .map(CsvUtils::parseLine)
+        .toList();
     return new Table(columns, rows);
   }
 

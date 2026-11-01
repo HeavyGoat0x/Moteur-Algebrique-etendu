@@ -134,4 +134,17 @@ class ExecutePlanTest {
     Path requete = Files.writeString(dossier.resolve("requete.json"), "{\"tables\": {");
     assertTrue(erreurDe(requete.toString()).startsWith("Erreur : "));
   }
+
+  @Test
+  void main_ligneDeMauvaiseLargeur_afficheUneErreur() throws Exception {
+    Path csv = Files.writeString(dossier.resolve("users.csv"), "id,name,age\n2,Bob\n");
+    JsonObject requete = JsonParser.parseString("""
+        {"tables": {}, "plan": {"type": "SCAN", "table": "users"}}
+        """).getAsJsonObject();
+    requete.getAsJsonObject("tables").addProperty("users", csv.toString());
+    requete.addProperty("output", dossier.resolve("output.csv").toString());
+    Path fichier = Files.writeString(dossier.resolve("requete.json"), requete.toString());
+
+    assertTrue(erreurDe(fichier.toString()).startsWith("Erreur : Ligne de 2 valeurs"));
+  }
 }

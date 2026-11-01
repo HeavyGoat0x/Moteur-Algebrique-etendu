@@ -92,4 +92,33 @@ class TableTest {
   void getRows_modification_leveUnsupportedOperation() {
     assertThrows(UnsupportedOperationException.class, () -> users.getRows().add(alice));
   }
+
+  @Test
+  void addRow_largeurDifferente_leveIllegalArgument() {
+    Row courte = new Row(List.of(3, "Charlie"));
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> users.addRow(courte));
+    assertEquals("Ligne de 2 valeurs pour un schéma de 3 colonnes : [3, Charlie]", e.getMessage());
+  }
+
+  @Test
+  void addRow_ligneTropLongue_leveIllegalArgument() {
+    Row longue = new Row(List.of(3, "Charlie", 27, "Paris"));
+    assertThrows(IllegalArgumentException.class, () -> users.addRow(longue));
+  }
+
+  @Test
+  void addRow_ligneRefusee_laisseLaTableInchangee() {
+    Row courte = new Row(List.of(3));
+    assertThrows(IllegalArgumentException.class, () -> users.addRow(courte));
+    assertEquals(List.of(alice, bob), users.getRows());
+  }
+
+  // La mauvaise ligne est la dernière : le constructeur doit vérifier toutes les lignes
+  @Test
+  void constructeur_ligneDeLargeurDifferente_leveIllegalArgument() {
+    List<String> colonnes = List.of("id", "name", "age");
+    List<Row> lignes = List.of(alice, new Row(List.of(3, "Charlie")));
+    assertThrows(IllegalArgumentException.class, () -> new Table(colonnes, lignes));
+  }
 }
