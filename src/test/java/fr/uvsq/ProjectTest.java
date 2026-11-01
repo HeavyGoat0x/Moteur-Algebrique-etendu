@@ -53,6 +53,16 @@ class ProjectTest {
     assertEquals(List.of(List.of("Alice"), List.of("David")), Fixtures.valeurs(resultat));
   }
 
+  // Décision Q5 : comme un SELECT SQL sans DISTINCT, la projection garde les doublons
+  @Test
+  void execute_valeursRepetees_gardeLesDoublons() {
+    Table villes = new Table(List.of("id", "ville"));
+    villes.addRow(new Row(List.of(1, "Paris")));
+    villes.addRow(new Row(List.of(2, "Paris")));
+    Table resultat = new Project(new Scan(villes), List.of("ville")).execute();
+    assertEquals(List.of(List.of("Paris"), List.of("Paris")), Fixtures.valeurs(resultat));
+  }
+
   @Test
   void execute_colonneInconnue_leveIllegalArgument() {
     Project projection = new Project(new Scan(users), List.of("name", "email"));

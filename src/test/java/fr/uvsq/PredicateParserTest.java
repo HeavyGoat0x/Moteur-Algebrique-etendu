@@ -68,6 +68,12 @@ class PredicateParserTest {
     assertFalse(PredicateParser.parse("name > 'Alice'").test(bob, users));
   }
 
+  // Décision C21 : un nombre entre quotes reste comparé comme un nombre
+  @Test
+  void parse_nombreEntreQuotes_compareNumeriquement() {
+    assertTrue(PredicateParser.parse("age = '30'").test(bob, users));
+  }
+
   @Test
   void parse_chaineAvecEspace_conserveLaValeur() {
     Row bobSmith = new Row(List.of(3, "Bob Smith", 40));
