@@ -98,6 +98,42 @@ class CsvUtilsTest {
   }
 
   @Test
+  void readCsv_champVideEnFinDeLigne_estConserve() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("a,b,c\n1,2,\n"));
+    assertEquals(List.of(1, 2, ""), table.getRows().get(0).getValues());
+  }
+
+  @Test
+  void readCsv_colonneSansNomEnFin_estConservee() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("a,b,\n1,2,3\n"));
+    assertEquals(List.of("a", "b", ""), table.getColumns());
+  }
+
+  @Test
+  void writeCsv_tableRelue_redonneLeMemeFichier() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("a,b,c\n1,2,\n"));
+    Path sortie = dossier.resolve("sortie.csv");
+    CsvUtils.writeCsv(sortie.toString(), table);
+    assertEquals("a,b,c\n1,2,\n", Files.readString(sortie));
+  }
+
+  // readString garde les fins de ligne, contrairement à readAllLines
+  @Test
+  void writeCsv_finsDeLigne_sontToujoursLf() throws IOException {
+    Path sortie = dossier.resolve("sortie.csv");
+    CsvUtils.writeCsv(sortie.toString(), tableUsers());
+    assertEquals("id,name,score\n1,Alice,22.5\n2,Bob,30\n", Files.readString(sortie));
+  }
+
+  @Test
+  void writeCsv_valeurAccentuee_ecritEnUtf8() throws IOException {
+    Table table = new Table(List.of("name"), List.of(new Row(List.of("Éloïse"))));
+    Path sortie = dossier.resolve("sortie.csv");
+    CsvUtils.writeCsv(sortie.toString(), table);
+    assertEquals("name\nÉloïse\n", Files.readString(sortie));
+  }
+
+  @Test
   void writeCsv_table_ecritEnTetePuisLignes() throws IOException {
     Path sortie = dossier.resolve("sortie.csv");
     CsvUtils.writeCsv(sortie.toString(), tableUsers());
