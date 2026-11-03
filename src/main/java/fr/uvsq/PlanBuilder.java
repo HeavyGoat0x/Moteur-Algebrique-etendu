@@ -29,6 +29,9 @@ public class PlanBuilder {
     register("SELECT", PlanBuilder::select);
     register("PROJECT", PlanBuilder::project);
     register("JOIN", PlanBuilder::join);
+    register("UNION", PlanBuilder::union);
+    register("INTERSECTION", PlanBuilder::intersection);
+    register("DIFFERENCE", PlanBuilder::difference);
   }
 
   // Associe un type d'opérateur à sa fabrique (remplace la fabrique déjà enregistrée)
@@ -39,7 +42,8 @@ public class PlanBuilder {
   /**
    * Construit récursivement l'opérateur décrit par un nœud du plan.
    *
-   * @param node nœud JSON portant un champ "type" (SCAN, SELECT, PROJECT, JOIN)
+   * @param node nœud JSON portant un champ "type" (SCAN, SELECT, PROJECT, JOIN, UNION,
+   *     INTERSECTION, DIFFERENCE)
    * @return l'opérateur racine du sous-plan
    * @throws IllegalArgumentException si le type ou la table est inconnu, ou si un champ
    *     obligatoire manque
@@ -86,6 +90,24 @@ public class PlanBuilder {
     String leftCol = required(node, "onLeft").getAsString();
     String rightCol = required(node, "onRight").getAsString();
     return new Join(left, right, leftCol, rightCol);
+  }
+
+  private static Operator union(JsonObject node, PlanBuilder builder) {
+    Operator left = builder.build(required(node, "left").getAsJsonObject());
+    Operator right = builder.build(required(node, "right").getAsJsonObject());
+    return new Union(left, right);
+  }
+
+  private static Operator intersection(JsonObject node, PlanBuilder builder) {
+    Operator left = builder.build(required(node, "left").getAsJsonObject());
+    Operator right = builder.build(required(node, "right").getAsJsonObject());
+    return new Intersection(left, right);
+  }
+
+  private static Operator difference(JsonObject node, PlanBuilder builder) {
+    Operator left = builder.build(required(node, "left").getAsJsonObject());
+    Operator right = builder.build(required(node, "right").getAsJsonObject());
+    return new Difference(left, right);
   }
 
   // Champ obligatoire d'un nœud JSON : message clair au lieu d'une NullPointerException de Gson

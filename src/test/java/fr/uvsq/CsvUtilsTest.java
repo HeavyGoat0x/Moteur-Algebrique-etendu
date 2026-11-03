@@ -110,6 +110,47 @@ class CsvUtilsTest {
   }
 
   @Test
+  void readCsv_ligneVide_estIgnoree() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("id,name\n1,Alice\n\n"));
+    assertEquals(1, table.getRows().size());
+    assertEquals(List.of(1, "Alice"), table.getRows().get(0).getValues());
+  }
+
+  @Test
+  void readCsv_ligneVideAuMilieu_gardeLesLignesSuivantes() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("id,name\n1,Alice\n\n2,Bob\n"));
+    assertEquals(2, table.getRows().size());
+    assertEquals(List.of(2, "Bob"), table.getRows().get(1).getValues());
+  }
+
+  @Test
+  void readCsv_ligneDeBlancs_estIgnoree() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("id,name\n1,Alice\n   \n"));
+    assertEquals(1, table.getRows().size());
+  }
+
+  @Test
+  void readCsv_ligneDeVirgules_estConservee() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("a,b\n,\n"));
+    assertEquals(List.of("", ""), table.getRows().get(0).getValues());
+  }
+
+  // Contrepartie assumée : sur une seule colonne, une valeur vide est une ligne vide
+  @Test
+  void readCsv_valeurVideSurUneColonne_estPerdue() throws IOException {
+    Table table = CsvUtils.readCsv(ecrireFichier("name\nAlice\n\nBob\n"));
+    assertEquals(2, table.getRows().size());
+  }
+
+  @Test
+  void readCsv_ligneTropCourte_leveIllegalArgument() throws IOException {
+    String fichier = ecrireFichier("id,name,age\n1,Alice,22\n2,Bob\n");
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> CsvUtils.readCsv(fichier));
+    assertTrue(e.getMessage().contains("[2, Bob]"));
+  }
+
+  @Test
   void writeCsv_tableRelue_redonneLeMemeFichier() throws IOException {
     Table table = CsvUtils.readCsv(ecrireFichier("a,b,c\n1,2,\n"));
     Path sortie = dossier.resolve("sortie.csv");

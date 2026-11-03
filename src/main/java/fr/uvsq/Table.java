@@ -26,9 +26,11 @@ public class Table {
    *
    * @param columns noms des colonnes, dans l'ordre
    * @param rows lignes de la table, dans l'ordre
+   * @throws IllegalArgumentException si une ligne n'a pas autant de valeurs que de colonnes
    */
   public Table(List<String> columns, List<Row> rows) {
     this.columns = List.copyOf(columns);
+    rows.forEach(this::verifyRowLength);
     this.rows = new ArrayList<>(rows);
   }
 
@@ -69,8 +71,18 @@ public class Table {
    * Ajoute une ligne à la fin de la table.
    *
    * @param row ligne à ajouter
+   * @throws IllegalArgumentException si la ligne n'a pas autant de valeurs que de colonnes
    */
   public void addRow(Row row) {
+    verifyRowLength(row);
     rows.add(row);
+  }
+
+  private void verifyRowLength(Row row) {
+    if (row.getValues().size() != this.columns.size()) {
+      throw new IllegalArgumentException(
+          "Ligne de " + row.getValues().size() + " valeurs pour un schéma de " + this.columns.size()
+              + " colonnes : " + row);
+    }
   }
 }

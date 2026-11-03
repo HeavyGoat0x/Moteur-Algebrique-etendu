@@ -1,0 +1,20 @@
+{
+  "tables": {
+    "users": "users.csv"
+  },
+  "plan": {
+    "type": "DIFFERENCE",
+    "left": {
+      "type": "SCAN",
+      "table": "users"
+    },
+    "right": {
+      "type": "SELECT",
+      "predicate": "age < 25",
+      "input": {
+        "type": "SCAN",
+        "table": "users"
+      }
+    }
+  }
+}

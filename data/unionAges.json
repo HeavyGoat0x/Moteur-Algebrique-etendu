@@ -1,0 +1,24 @@
+{
+  "tables": {
+    "users": "users.csv"
+  },
+  "plan": {
+    "type": "UNION",
+    "left": {
+      "type": "SELECT",
+      "predicate": "age < 25",
+      "input": {
+        "type": "SCAN",
+        "table": "users"
+      }
+    },
+    "right": {
+      "type": "SELECT",
+      "predicate": "age > 25",
+      "input": {
+        "type": "SCAN",
+        "table": "users"
+      }
+    }
+  }
+}

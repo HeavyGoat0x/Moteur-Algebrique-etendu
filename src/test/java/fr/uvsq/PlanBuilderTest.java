@@ -34,6 +34,21 @@ class PlanBuilderTest {
           {"type": "JOIN", "onLeft": "id", "onRight": "user_id",
            "left": {"type": "SCAN", "table": "users"},
            "right": {"type": "SCAN", "table": "orders"}}
+          """,
+      "UNION", """
+          {"type": "UNION",
+           "left": {"type": "SCAN", "table": "users"},
+           "right": {"type": "SCAN", "table": "users"}}
+          """,
+      "INTERSECTION", """
+          {"type": "INTERSECTION",
+           "left": {"type": "SCAN", "table": "users"},
+           "right": {"type": "SCAN", "table": "users"}}
+          """,
+      "DIFFERENCE", """
+          {"type": "DIFFERENCE",
+           "left": {"type": "SCAN", "table": "users"},
+           "right": {"type": "SCAN", "table": "users"}}
           """);
 
   private PlanBuilder builder;
@@ -115,6 +130,76 @@ class PlanBuilderTest {
   }
 
   @Test
+  void build_union_combineLesDeuxSousPlans() throws IOException {
+    Table resultat = executer("""
+        {"type": "UNION",
+         "left": {"type": "SELECT", "predicate": "age < 25",
+                  "input": {"type": "SCAN", "table": "users"}},
+         "right": {"type": "SELECT", "predicate": "age > 25",
+                   "input": {"type": "SCAN", "table": "users"}}}
+        """);
+    assertEquals(
+        List.of(
+            List.of(1, "Alice", 22),
+            List.of(4, "David", 19),
+            List.of(2, "Bob", 30),
+            List.of(3, "Charlie", 27)),
+        Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void build_intersection_gardeLesLignesCommunes() throws IOException {
+    Table resultat = executer("""
+        {"type": "INTERSECTION",
+         "left": {"type": "SELECT", "predicate": "age < 30",
+                  "input": {"type": "SCAN", "table": "users"}},
+         "right": {"type": "SELECT", "predicate": "age > 20",
+                   "input": {"type": "SCAN", "table": "users"}}}
+        """);
+    assertEquals(
+        List.of(List.of(1, "Alice", 22), List.of(3, "Charlie", 27)),
+        Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void build_difference_retireLesLignesDeDroite() throws IOException {
+    Table resultat = executer("""
+        {"type": "DIFFERENCE",
+         "left": {"type": "SCAN", "table": "users"},
+         "right": {"type": "SELECT", "predicate": "age < 25",
+                   "input": {"type": "SCAN", "table": "users"}}}
+        """);
+    assertEquals(
+        List.of(List.of(2, "Bob", 30), List.of(3, "Charlie", 27)),
+        Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void build_projectSurUnion_utiliseSonResultat() throws IOException {
+    Table resultat = executer("""
+        {"type": "PROJECT", "columns": ["name"],
+         "input": {"type": "UNION",
+                   "left": {"type": "SELECT", "predicate": "age < 25",
+                            "input": {"type": "SCAN", "table": "users"}},
+                   "right": {"type": "SCAN", "table": "users"}}}
+        """);
+    assertEquals(
+        List.of(List.of("Alice"), List.of("David"), List.of("Bob"), List.of("Charlie")),
+        Fixtures.valeurs(resultat));
+  }
+
+  // Le plan se construit : les schémas ne sont connus qu'à l'exécution
+  @Test
+  void execute_unionDeSchemasDifferents_leveSchemaMismatch() {
+    Operator plan = builder.build(json("""
+        {"type": "UNION",
+         "left": {"type": "SCAN", "table": "users"},
+         "right": {"type": "SCAN", "table": "orders"}}
+        """));
+    assertThrows(SchemaMismatchException.class, plan::execute);
+  }
+
+  @Test
   void build_tableInconnue_leveIllegalArgument() {
     JsonObject plan = json("""
         {"type": "SCAN", "table": "clients"}
@@ -132,7 +217,9 @@ class PlanBuilderTest {
 
   // Témoin : sans champ retiré, chaque nœud complet se construit
   @ParameterizedTest
-  @ValueSource(strings = {"SCAN", "SELECT", "PROJECT", "JOIN"})
+  @ValueSource(strings = {
+      "SCAN", "SELECT", "PROJECT", "JOIN", "UNION", "INTERSECTION", "DIFFERENCE"
+  })
   void build_noeudComplet_seConstruit(String type) {
     assertDoesNotThrow(() -> builder.build(json(NOEUDS_COMPLETS.get(type))));
   }
@@ -142,7 +229,10 @@ class PlanBuilderTest {
       "SCAN, type", "SCAN, table",
       "SELECT, input", "SELECT, predicate",
       "PROJECT, input", "PROJECT, columns",
-      "JOIN, left", "JOIN, right", "JOIN, onLeft", "JOIN, onRight"
+      "JOIN, left", "JOIN, right", "JOIN, onLeft", "JOIN, onRight",
+      "UNION, left", "UNION, right",
+      "INTERSECTION, left", "INTERSECTION, right",
+      "DIFFERENCE, left", "DIFFERENCE, right"
   })
   void build_champManquant_leveIllegalArgumentQuiLeNomme(String type, String champ) {
     JsonObject noeud = json(NOEUDS_COMPLETS.get(type));
