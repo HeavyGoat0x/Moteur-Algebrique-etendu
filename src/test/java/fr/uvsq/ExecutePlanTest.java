@@ -1,6 +1,7 @@
 package fr.uvsq;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
@@ -57,7 +58,7 @@ class ExecutePlanTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"plan1", "reqProjSel", "optJoin"})
+  @ValueSource(strings = {"plan1", "reqProjSel", "optJoin", "unionAges", "interAges", "diffAges"})
   void main_planDuDepot_produitLeResultatAttendu(String nom) throws Exception {
     Path sortie = Files.createDirectories(dossier.resolve("results")).resolve("output.csv");
 
@@ -146,5 +147,27 @@ class ExecutePlanTest {
     Path fichier = Files.writeString(dossier.resolve("requete.json"), requete.toString());
 
     assertTrue(erreurDe(fichier.toString()).startsWith("Erreur : Ligne de 2 valeurs"));
+  }
+
+  @Test
+  void main_schemasIncompatibles_afficheLesDeuxSchemasSansEcrire() throws Exception {
+    JsonObject requete = JsonParser.parseString("""
+        {"tables": {},
+         "plan": {"type": "UNION",
+                  "left": {"type": "SCAN", "table": "users"},
+                  "right": {"type": "SCAN", "table": "orders"}}}
+        """).getAsJsonObject();
+    JsonObject tables = requete.getAsJsonObject("tables");
+    tables.addProperty("users", DATA.resolve("users.csv").toAbsolutePath().toString());
+    tables.addProperty("orders", DATA.resolve("orders.csv").toAbsolutePath().toString());
+    Path sortie = dossier.resolve("output.csv");
+    requete.addProperty("output", sortie.toString());
+    Path fichier = Files.writeString(dossier.resolve("requete.json"), requete.toString());
+
+    String erreur = erreurDe(fichier.toString());
+
+    assertTrue(erreur.startsWith(
+        "Erreur : Schémas incompatibles : [id, name, age] et [id, user_id, amount]"));
+    assertFalse(Files.exists(sortie));
   }
 }
