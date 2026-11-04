@@ -3,6 +3,7 @@ package fr.uvsq;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class PlanBuilder {
     register("UNION", PlanBuilder::union);
     register("INTERSECTION", PlanBuilder::intersection);
     register("DIFFERENCE", PlanBuilder::difference);
+    register("AGGREGATE", PlanBuilder::aggregate);
   }
 
   // Associe un type d'opérateur à sa fabrique (remplace la fabrique déjà enregistrée)
@@ -108,6 +110,21 @@ public class PlanBuilder {
     Operator left = builder.build(required(node, "left").getAsJsonObject());
     Operator right = builder.build(required(node, "right").getAsJsonObject());
     return new Difference(left, right);
+  }
+
+  private static Operator aggregate(JsonObject node, PlanBuilder builder) {
+    Operator input = builder.build(required(node, "input").getAsJsonObject());
+    String alias = required(node, "as").getAsString();
+    String column = required(node, "column").getAsString();
+    List<String> groupBy = required(node, "groupBy").getAsJsonArray().asList().stream()
+        .map(JsonElement::getAsString).toList();
+    String functionName = required(node, "function").getAsString();
+    AggregateFunction function = Arrays.stream(AggregateFunction.values())
+        .filter(f -> f.name().equalsIgnoreCase(functionName))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Fonction d'agrégation inconnue : " + functionName));
+    return new Aggregate(input, groupBy, function, column, alias);
   }
 
   // Champ obligatoire d'un nœud JSON : message clair au lieu d'une NullPointerException de Gson

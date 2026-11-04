@@ -1,0 +1,26 @@
+{
+  "tables": {
+    "users": "users.csv",
+    "orders": "orders.csv"
+  },
+  "plan": {
+    "type": "AGGREGATE",
+    "groupBy": ["name"],
+    "function": "SUM",
+    "column": "amount",
+    "as": "total",
+    "input": {
+      "type": "JOIN",
+      "onLeft": "id",
+      "onRight": "user_id",
+      "left": {
+        "type": "SCAN",
+        "table": "users"
+      },
+      "right": {
+        "type": "SCAN",
+        "table": "orders"
+      }
+    }
+  }
+}

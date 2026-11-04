@@ -58,7 +58,9 @@ class ExecutePlanTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"plan1", "reqProjSel", "optJoin", "unionAges", "interAges", "diffAges"})
+  @ValueSource(strings = {
+      "plan1", "reqProjSel", "optJoin", "unionAges", "interAges", "diffAges", "totalParNom"
+  })
   void main_planDuDepot_produitLeResultatAttendu(String nom) throws Exception {
     Path sortie = Files.createDirectories(dossier.resolve("results")).resolve("output.csv");
 
