@@ -49,6 +49,11 @@ class PlanBuilderTest {
           {"type": "DIFFERENCE",
            "left": {"type": "SCAN", "table": "users"},
            "right": {"type": "SCAN", "table": "users"}}
+          """,
+      "AGGREGATE", """
+          {"type": "AGGREGATE", "groupBy": ["user_id"], "function": "SUM",
+           "column": "amount", "as": "total",
+           "input": {"type": "SCAN", "table": "orders"}}
           """);
 
   private PlanBuilder builder;
@@ -188,6 +193,78 @@ class PlanBuilderTest {
         Fixtures.valeurs(resultat));
   }
 
+  @Test
+  void build_aggregate_calculeLeTotalParUtilisateur() throws IOException {
+    Table resultat = executer(NOEUDS_COMPLETS.get("AGGREGATE"));
+    assertEquals(List.of("user_id", "total"), resultat.getColumns());
+    assertEquals(
+        List.of(List.of(2, 300L), List.of(1, 150L), List.of(3, 50L)), Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void build_aggregateFonctionEnMinuscules_estReconnue() throws IOException {
+    Table resultat = executer("""
+        {"type": "AGGREGATE", "groupBy": ["user_id"], "function": "count",
+         "column": "amount", "as": "nb",
+         "input": {"type": "SCAN", "table": "orders"}}
+        """);
+    assertEquals(List.of(List.of(2, 2), List.of(1, 1), List.of(3, 1)), Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void build_aggregateGroupByVide_renvoieUneSeuleLigne() throws IOException {
+    Table resultat = executer("""
+        {"type": "AGGREGATE", "groupBy": [], "function": "SUM",
+         "column": "amount", "as": "total",
+         "input": {"type": "SCAN", "table": "orders"}}
+        """);
+    assertEquals(List.of("total"), resultat.getColumns());
+    assertEquals(List.of(List.of(500L)), Fixtures.valeurs(resultat));
+  }
+
+  // L'ordre de groupBy dans le JSON donne l'ordre des colonnes de sortie
+  @Test
+  void build_aggregateDeuxColonnesGroupBy_gardeLeurOrdre() throws IOException {
+    Table resultat = executer("""
+        {"type": "AGGREGATE", "groupBy": ["user_id", "id"], "function": "MAX",
+         "column": "amount", "as": "max",
+         "input": {"type": "SCAN", "table": "orders"}}
+        """);
+    assertEquals(List.of("user_id", "id", "max"), resultat.getColumns());
+    assertEquals(List.of(2, 10, 100), resultat.getRows().get(0).getValues());
+  }
+
+  @Test
+  void build_aggregateSurJoin_calculeLeTotalParNom() throws IOException {
+    Table resultat = executer("""
+        {"type": "AGGREGATE", "groupBy": ["name"], "function": "SUM",
+         "column": "amount", "as": "total",
+         "input": {"type": "JOIN", "onLeft": "id", "onRight": "user_id",
+                   "left": {"type": "SCAN", "table": "users"},
+                   "right": {"type": "SCAN", "table": "orders"}}}
+        """);
+    assertEquals(
+        List.of(List.of("Alice", 150L), List.of("Bob", 300L), List.of("Charlie", 50L)),
+        Fixtures.valeurs(resultat));
+  }
+
+  @Test
+  void build_aggregateFonctionInconnue_leveIllegalArgumentQuiLaNomme() {
+    JsonObject noeud = json(NOEUDS_COMPLETS.get("AGGREGATE"));
+    noeud.addProperty("function", "SUMM");
+    IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> builder.build(noeud));
+    assertEquals("Fonction d'agrégation inconnue : SUMM", e.getMessage());
+  }
+
+  // L'alias en double ne dépend pas des données : refusé dès la construction du plan
+  @Test
+  void build_aggregateAliasDansGroupBy_leveIllegalArgument() {
+    JsonObject noeud = json(NOEUDS_COMPLETS.get("AGGREGATE"));
+    noeud.addProperty("as", "user_id");
+    assertThrows(IllegalArgumentException.class, () -> builder.build(noeud));
+  }
+
   // Le plan se construit : les schémas ne sont connus qu'à l'exécution
   @Test
   void execute_unionDeSchemasDifferents_leveSchemaMismatch() {
@@ -218,7 +295,7 @@ class PlanBuilderTest {
   // Témoin : sans champ retiré, chaque nœud complet se construit
   @ParameterizedTest
   @ValueSource(strings = {
-      "SCAN", "SELECT", "PROJECT", "JOIN", "UNION", "INTERSECTION", "DIFFERENCE"
+      "SCAN", "SELECT", "PROJECT", "JOIN", "UNION", "INTERSECTION", "DIFFERENCE", "AGGREGATE"
   })
   void build_noeudComplet_seConstruit(String type) {
     assertDoesNotThrow(() -> builder.build(json(NOEUDS_COMPLETS.get(type))));
@@ -232,7 +309,9 @@ class PlanBuilderTest {
       "JOIN, left", "JOIN, right", "JOIN, onLeft", "JOIN, onRight",
       "UNION, left", "UNION, right",
       "INTERSECTION, left", "INTERSECTION, right",
-      "DIFFERENCE, left", "DIFFERENCE, right"
+      "DIFFERENCE, left", "DIFFERENCE, right",
+      "AGGREGATE, input", "AGGREGATE, groupBy", "AGGREGATE, function", "AGGREGATE, column",
+      "AGGREGATE, as"
   })
   void build_champManquant_leveIllegalArgumentQuiLeNomme(String type, String champ) {
     JsonObject noeud = json(NOEUDS_COMPLETS.get(type));
