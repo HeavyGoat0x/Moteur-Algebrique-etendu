@@ -1,7 +1,12 @@
 package fr.uvsq;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,5 +130,19 @@ class AlgTranslator {
       return relations.get(inputName);
     }
     throw new IllegalArgumentException("Relation inconnue : " + inputName);
+  }
+
+  // Traduit le fichier .alg et écrit le JSON à côté, sous le même nom ; renvoie le fichier écrit
+  static Path translateFile(Path alg) throws IOException {
+    List<String> lines = Files.readAllLines(alg);
+    JsonObject request = translate(lines);
+    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    String texte = gson.toJson(request);
+
+    String algName = alg.getFileName().toString();
+    String baseName = algName.substring(0, algName.length() - ".alg".length());
+    Path json = alg.resolveSibling(baseName + ".json"); // sans dossier : reqProjSel.json seul
+    Files.writeString(json, texte);
+    return json;
   }
 }

@@ -1,18 +1,22 @@
 package fr.uvsq;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -22,6 +26,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class AlgTranslatorTest {
 
   private static final Path DATA = Path.of("data");
+
+  @TempDir
+  Path dossier;
 
   private static JsonObject traduire(String... lignes) {
     return AlgTranslator.translate(List.of(lignes));
@@ -211,5 +218,57 @@ class AlgTranslatorTest {
     IllegalArgumentException e =
         assertThrows(IllegalArgumentException.class, () -> AlgTranslator.translate(List.of()));
     assertEquals("Aucune relation définie", e.getMessage());
+  }
+
+  // La traduction écrit à côté du .alg : on le copie d'abord dans le dossier temporaire
+  private Path copierAlg(String nom) throws Exception {
+    return Files.copy(DATA.resolve(nom + ".alg"), dossier.resolve(nom + ".alg"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"reqProjSel", "optJoin"})
+  void translateFile_exempleDuReadme_ecritLeJsonDuDepot(String nom) throws Exception {
+    Path ecrit = AlgTranslator.translateFile(copierAlg(nom));
+
+    assertEquals(dossier.resolve(nom + ".json"), ecrit);
+    assertEquals(json(Files.readString(DATA.resolve(nom + ".json"))),
+        json(Files.readString(ecrit)));
+  }
+
+  @Test
+  void translateFile_jsonEcrit_estIndente() throws Exception {
+    Path ecrit = AlgTranslator.translateFile(copierAlg("reqProjSel"));
+
+    List<String> lignes = Files.readAllLines(ecrit);
+    assertTrue(lignes.size() > 1);
+    assertEquals("{", lignes.get(0));
+    assertTrue(lignes.get(1).startsWith("  \"tables\""));
+  }
+
+  @Test
+  void translateFile_jsonDejaPresent_estRemplace() throws Exception {
+    Files.writeString(dossier.resolve("reqProjSel.json"), "ancien contenu");
+
+    Path ecrit = AlgTranslator.translateFile(copierAlg("reqProjSel"));
+
+    assertEquals(json(Files.readString(DATA.resolve("reqProjSel.json"))),
+        json(Files.readString(ecrit)));
+  }
+
+  @Test
+  void translateFile_fichierAbsent_leveNoSuchFile() {
+    assertThrows(NoSuchFileException.class,
+        () -> AlgTranslator.translateFile(dossier.resolve("absent.alg")));
+  }
+
+  @Test
+  void translateFile_ligneIllisible_aucunJsonEcrit() throws Exception {
+    Path alg = Files.writeString(dossier.resolve("requete.alg"), """
+        users: users.csv
+        R = TRI users
+        """);
+
+    assertThrows(IllegalArgumentException.class, () -> AlgTranslator.translateFile(alg));
+    assertFalse(Files.exists(dossier.resolve("requete.json")));
   }
 }

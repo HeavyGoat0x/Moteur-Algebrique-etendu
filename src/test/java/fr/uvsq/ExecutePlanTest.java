@@ -57,6 +57,19 @@ class ExecutePlanTest {
     return capture.toString(StandardCharsets.UTF_8);
   }
 
+  // Exécute main en capturant la sortie standard
+  private static String sortieDe(String... args) {
+    PrintStream sortieStandard = System.out;
+    ByteArrayOutputStream capture = new ByteArrayOutputStream();
+    System.setOut(new PrintStream(capture, true, StandardCharsets.UTF_8));
+    try {
+      ExecutePlan.main(args);
+    } finally {
+      System.setOut(sortieStandard);
+    }
+    return capture.toString(StandardCharsets.UTF_8);
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {
       "plan1", "reqProjSel", "optJoin", "unionAges", "interAges", "diffAges", "totalParNom"
@@ -71,16 +84,8 @@ class ExecutePlanTest {
   }
 
   @Test
-  void main_sansArgument_afficheUsage() throws Exception {
-    PrintStream sortieStandard = System.out;
-    ByteArrayOutputStream capture = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(capture, true, StandardCharsets.UTF_8));
-    try {
-      ExecutePlan.main(new String[] {});
-    } finally {
-      System.setOut(sortieStandard);
-    }
-    assertTrue(capture.toString(StandardCharsets.UTF_8).contains("Usage"));
+  void main_sansArgument_afficheUsage() {
+    assertTrue(sortieDe().contains("Usage"));
   }
 
   @Test
@@ -171,5 +176,46 @@ class ExecutePlanTest {
     assertTrue(erreur.startsWith(
         "Erreur : Schémas incompatibles : [id, name, age] et [id, user_id, amount]"));
     assertFalse(Files.exists(sortie));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"reqProjSel", "optJoin"})
+  void main_fichierAlg_afficheLaTraductionSansExecuter(String nom) throws Exception {
+    Path alg = Files.copy(DATA.resolve(nom + ".alg"), dossier.resolve(nom + ".alg"));
+
+    // une exécution afficherait "Résultat écrit dans …" : seule la traduction a eu lieu
+    assertEquals("Traduction en " + nom + ".json", sortieDe(alg.toString()).strip());
+    assertEquals(JsonParser.parseString(Files.readString(DATA.resolve(nom + ".json"))),
+        JsonParser.parseString(Files.readString(dossier.resolve(nom + ".json"))));
+  }
+
+  @Test
+  void main_jsonDontLeCheminContientAlg_estExecuteSansTraduction() throws Exception {
+    Path sortie = dossier.resolve("output.csv");
+    Path dossierAlg = Files.createDirectories(dossier.resolve("td4_alg"));
+    Path requete = Files.move(preparerRequete("reqProjSel", sortie),
+        dossierAlg.resolve("algebre.json"));
+
+    assertTrue(sortieDe(requete.toString()).startsWith("Résultat écrit dans "));
+    assertEquals(Files.readAllLines(EXPECTED.resolve("reqProjSel_expected.csv")),
+        Files.readAllLines(sortie));
+  }
+
+  @Test
+  void main_fichierAlgAbsent_afficheFichierIntrouvable() {
+    String erreur = erreurDe(dossier.resolve("absent.alg").toString());
+    assertTrue(erreur.contains("Fichier introuvable"));
+    assertTrue(erreur.contains("absent.alg"));
+  }
+
+  @Test
+  void main_algAvecOperateurInconnu_afficheUnMessageClair() throws Exception {
+    Path alg = Files.writeString(dossier.resolve("requete.alg"), """
+        users: users.csv
+        R = TRI users
+        """);
+
+    assertTrue(erreurDe(alg.toString()).startsWith("Erreur : Opérateur inconnu : TRI"));
+    assertFalse(Files.exists(dossier.resolve("requete.json")));
   }
 }

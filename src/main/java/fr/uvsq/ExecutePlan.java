@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Point d'entrée : exécute le plan algébrique décrit dans un fichier JSON.
+ * Point d'entrée : exécute une requête JSON ou traduit une requête .alg en JSON.
  */
 public class ExecutePlan {
 
@@ -20,19 +20,29 @@ public class ExecutePlan {
   /**
    * Exécute la requête passée en argument et indique le fichier produit.
    *
-   * <p>Une erreur de l'utilisateur (fichier absent, JSON mal formé ou incomplet, table, colonne
-   * ou type inconnu) est affichée sur la sortie d'erreur, sans pile d'appels.
+   * <p>Un fichier .alg est seulement traduit en un fichier .json placé à côté, sans être exécuté.
    *
-   * @param args un seul argument, le chemin du fichier JSON de la requête
+   * <p>Une erreur de l'utilisateur (fichier absent, JSON mal formé ou incomplet, ligne .alg
+   * illisible, table, colonne ou type inconnu) est affichée sur la sortie d'erreur, sans pile
+   * d'appels.
+   *
+   * @param args un seul argument, le chemin du fichier JSON ou .alg de la requête
    */
   public static void main(String[] args) {
     if (args.length != 1) {
-      System.out.println("Usage: java ExecutePlan config.json");
+      System.out.println("Usage: java ExecutePlan requete.json|requete.alg");
       return;
     }
 
     try {
-      System.out.println("Résultat écrit dans " + run(Path.of(args[0])));
+      String pathName = args[0];
+      Path path = Path.of(pathName);
+      if (pathName.endsWith(".alg")) {
+        Path jsonPath = AlgTranslator.translateFile(path);
+        System.out.println("Traduction en " + jsonPath.getFileName());
+      } else {
+        System.out.println("Résultat écrit dans " + run(path));
+      }
     } catch (NoSuchFileException e) {
       System.err.println("Fichier introuvable : " + e.getFile());
     } catch (IOException | IllegalArgumentException | JsonParseException e) {
